@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS billing (
   claim_status VARCHAR (50),
   FOREIGN KEY (encounter_id) REFERENCES encounters (encounter_id),
   INDEX idx_claim_date (claim_date)
-);
+)

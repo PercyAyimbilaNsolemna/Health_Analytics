@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS patients (
   date_of_birth DATE,
   gender CHAR(1),
   mrn VARCHAR (20) UNIQUE
-);
+)

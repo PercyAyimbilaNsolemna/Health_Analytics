@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS encounter_diagnoses (
   diagnosis_sequence INT,
   FOREIGN KEY (encounter_id) REFERENCES encounters (encounter_id),
   FOREIGN KEY (diagnosis_id) REFERENCES diagnoses (diagnosis_id)
-);
+)

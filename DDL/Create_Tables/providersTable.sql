@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS providers (
   department_id INT,
   FOREIGN KEY (specialty_id) REFERENCES specialties (specialty_id),
   FOREIGN KEY (department_id) REFERENCES departments (department_id)
-);
+)

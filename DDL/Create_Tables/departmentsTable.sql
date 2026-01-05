@@ -3,4 +3,4 @@ CREATE TABLE IF NOT EXISTS departments (
   department_name VARCHAR(100),
   floor INT,
   capacity INT
-);
+)
