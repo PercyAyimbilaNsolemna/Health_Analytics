@@ -1,0 +1,5 @@
+ipython-sql == 0.5.0
+sqlalchemy == 2.0.45
+mysql-connector-python == 9.5.0
+PyMySQL == 1.1.2
+python-dotenv == 1.2.1
