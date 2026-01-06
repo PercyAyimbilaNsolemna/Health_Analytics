@@ -1,0 +1,63 @@
+/*
+
+    Specialty with the highest readmission rate (30-day inpatient readmission)
+
+    Definition applied
+
+    First encounter: Inpatient
+
+    Has a discharge_date
+
+    Same patient returns within 30 days for another inpatient encounter
+
+*/
+
+
+WITH inpatient_encounters AS (
+    SELECT
+        e.encounter_id,
+        e.patient_id,
+        e.provider_id,
+        e.discharge_date,
+        LEAD(e.encounter_date) OVER (
+            PARTITION BY e.patient_id
+            ORDER BY e.encounter_date
+        ) AS next_encounter_date,
+        LEAD(e.encounter_type) OVER (
+            PARTITION BY e.patient_id
+            ORDER BY e.encounter_date
+        ) AS next_encounter_type
+    FROM encounters e
+    WHERE e.encounter_type = 'Inpatient'
+      AND e.discharge_date IS NOT NULL
+)
+SELECT
+    s.specialty_name,
+    COUNT(*) AS total_discharges,
+    SUM(
+        CASE
+            WHEN next_encounter_type = 'Inpatient'
+             AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+            THEN 1
+            ELSE 0
+        END
+    ) AS readmissions,
+    ROUND(
+        SUM(
+            CASE
+                WHEN next_encounter_type = 'Inpatient'
+                 AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+                THEN 1
+                ELSE 0
+            END
+        ) / COUNT(*) * 100, 2
+    ) AS readmission_rate_percent
+FROM inpatient_encounters ie
+JOIN providers p
+    ON ie.provider_id = p.provider_id
+JOIN specialties s
+    ON p.specialty_id = s.specialty_id
+GROUP BY
+    s.specialty_name
+ORDER BY
+    readmission_rate_percent DESC
