@@ -329,6 +329,10 @@ encounter_key
 
 procedure_key
 
+
+
+
+
 WHY BRIDGE TABLES ARE THE RIGHT Choice
 BENEFIT	                                                        EXPLANATION
 Preserves normalized relationships	                            No duplication in fact table
