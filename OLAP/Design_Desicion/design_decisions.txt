@@ -1,0 +1,358 @@
+STAR SCHEMA DESIGN FOR CLINICAL ANALYTICS
+
+
+ANALYTICAL WORKLOAD DRIVING THE DESIGN
+
+1. Monthly encounters & unique patients by specialty and encounter type
+
+2. Most common diagnosis–procedure combinations
+
+3. Readmission rates by specialty
+
+4. Revenue (allowed amounts) by specialty and month
+
+These queries are encounter-centric, time-based, and specialty-driven.
+
+
+
+
+DECISION 1: FACT TABLE GRAIN
+
+Chosen Option: Option A — One row per encounter
+
+Why not B or C?
+
+Diagnosis grain explodes row counts (1 encounter → N diagnoses)
+
+Procedure grain explodes row counts even more (N × M combinations)
+
+Both would:
+
+Inflate storage
+
+Slow scans
+
+Complicate readmission logic
+
+Distort encounter-based KPIs
+
+
+WHY ENCOUNTER GRAIN IS OPTIMAL FOR THE 4 QUERIES
+QUERY	                                            WHY ENCOUNTER GRAIN FITS
+Monthly encounters & unique patients	                Natural 1:1 mapping
+
+Readmission rate	                                    Requires sequencing encounters
+
+Revenue by specialty	                                Billing is encounter-based
+
+Diagnosis–procedure combos	                            Can be handled via bridge tables
+
+KEY PRINCIPLE:
+Facts should match the business event being measured.
+Here, that event is the clinical encounter.
+
+FACT TABLE DEFINITION:
+
+FACT_ENCOUNTER
+
+One row = one patient encounter.
+
+
+
+
+
+DECISION 2: DIMENSION TABLES
+
+We separate descriptive attributes from numeric facts to reduce joins and improve filter performance.
+
+
+DATE DIMENSION
+
+DIM_DATE
+
+Used for encounter date, discharge date, claim date.
+
+Columns
+
+date_key (PK, surrogate)
+
+full_date
+
+day
+
+week_of_year
+
+month
+
+month_name
+
+quarter
+
+year
+
+is_weekend
+
+Enables fast time slicing without DATE_FORMAT()
+Critical for monthly analytics (Queries 1 & 4)
+
+
+
+
+PATIENT DIMENSION
+
+DIM_PATIENT
+
+Columns
+
+patient_key (PK)
+
+patient_id (natural key)
+
+gender
+
+date_of_birth
+
+age_group (pre-derived)
+
+mrn
+
+No names (PII minimization best practice)
+
+
+USED FOR:
+
+Unique patient counts
+
+Readmission tracking
+
+
+
+
+
+PROVIDER DIMENSION
+
+DIM_PROVIDER
+
+Columns
+
+provider_key (PK)
+
+provider_id
+
+provider_name
+
+credential
+
+specialty_key
+
+department_key
+
+Keeps provider lookups fast without joining OLTP tables.
+
+
+
+
+SPECIALTY DIMENSION
+
+DIM_SPECIALTY
+
+Columns
+
+specialty_key (PK)
+
+specialty_code
+
+specialty_name
+
+Used heavily in all 4 queries
+
+
+
+
+DEPARTMENT DIMENSION
+
+DIM_DEPARTMENT
+
+Columns
+
+department_key (PK)
+
+department_name
+
+floor
+
+capacity
+
+Useful for future operational analytics (capacity utilization).
+
+
+
+
+ENCOUNTER TYPE DIMENSION
+
+DIM_ENCOUNTER_TYPE
+
+Columns
+
+encounter_type_key (PK)
+
+encounter_type_name
+(Inpatient, Outpatient, ER)
+
+Simplifies filtering and grouping.
+
+
+
+DIAGNOSIS DIMENSION
+
+DIM_DIAGNOSIS
+
+Columns
+
+diagnosis_key (PK)
+
+icd10_code
+
+icd10_description
+
+
+
+PROCEDURE DIMENSION
+
+DIM_PROCEDURE
+
+Columns
+
+procedure_key (PK)
+
+cpt_code
+
+cpt_description
+
+
+
+
+DECISION 3: PRE-AGGREGATED METRICS IN FACT TABLE
+
+METRIC	                                    WHY STORE IT
+diagnosis_count	                            Avoid COUNT() on bridge table
+
+procedure_count	                            Avoid join + GROUP BY
+
+total_allowed_amount	                    Avoid billing joins
+
+is_readmission_flag	                        Eliminates runtime window functions
+
+length_of_stay	                            Derived once, reused often
+
+
+
+
+FACT_ENCOUNTER Structure
+
+FACT_ENCOUNTER
+
+encounter_key (PK)
+
+encounter_id (natural key)
+
+date_key
+
+discharge_date_key
+
+patient_key
+
+provider_key
+
+specialty_key
+
+department_key
+
+encounter_type_key
+
+METRICS
+
+diagnosis_count
+
+procedure_count
+
+total_allowed_amount
+
+length_of_stay
+
+is_readmission_flag (0/1)
+
+
+
+WHY PRE-AGGREGATION IMPROVES PERFORMANCE
+
+Eliminates runtime joins to high-cardinality tables
+
+Avoids COUNT(DISTINCT ...)
+
+Converts complex logic into simple SUM()s
+
+Enables sub-second dashboard queries
+
+
+
+
+
+
+DECISION 4: BRIDGE TABLES (Many-to-Many)
+Yes — Bridge tables are required
+
+Because:
+
+One encounter → multiple diagnoses
+
+One encounter → multiple procedures
+
+
+
+
+BRIDGE TABLES DESIGN
+
+BRIDGE_ENCOUNTER_DIAGNOSIS
+
+encounter_key
+
+diagnosis_key
+
+diagnosis_sequence
+
+
+
+BRIDGE_ENCOUNTER_PROCEDURE
+
+encounter_key
+
+procedure_key
+
+WHY BRIDGE TABLES ARE THE RIGHT Choice
+BENEFIT	                                                        EXPLANATION
+Preserves normalized relationships	                            No duplication in fact table
+
+Supports diagnosis–procedure analytics	                        Query #2
+
+Keeps fact table slim	                                        Better scan performance
+
+Scales to clinical complexity	                                Real-world EHR modeling
+
+
+
+
+FINAL DESIGN SUMMARY
+
+DECISION	                                    FINAL CHOICE
+Fact grain	                                    One row per encounter
+
+Fact table	                                    FACT_ENCOUNTER
+
+Dimensions	                                    Date, Patient, Provider, Specialty, Department, Encounter Type
+
+High-cardinality attributes	                    Handled via bridge tables
+
+Pre-aggregation	                                Yes (counts, revenue, readmission flags)
+
+Query performance	                            Optimized for analytics
