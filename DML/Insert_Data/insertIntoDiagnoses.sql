@@ -1,0 +1,1 @@
+INSERT INTO diagnoses VALUES (3001, 'I10', 'Hypertension'), (3002, 'E11.9', 'Type 2 Diabetes'), (3003, 'I50.9', 'Heart Failure')

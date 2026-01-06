@@ -1,0 +1,1 @@
+INSERT INTO procedures VALUES (4001, '99213', 'Office Visit'), (4002, '93000', 'EKG'), (4003, '71020', 'Chest X-ray')
