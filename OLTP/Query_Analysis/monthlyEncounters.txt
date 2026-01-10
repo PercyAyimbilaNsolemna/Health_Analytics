@@ -32,7 +32,7 @@ TABLES JOINED:
 
 
 NUMBER OF JOINS:
-                    2
+                    
 
 
 EXECUTION TIME:

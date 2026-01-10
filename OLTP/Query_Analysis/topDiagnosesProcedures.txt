@@ -1,4 +1,4 @@
-QUESTION: Monthly Encounters by Specialty
+QUESTION: Top Diagnosis-Procedure Pairs
 
 SQL QUERY: 
             SELECT

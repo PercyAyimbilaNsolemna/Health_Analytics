@@ -1,4 +1,4 @@
-QUESTION: Monthly Encounters by Specialty
+QUESTION: Revenue by Specialty & Month
 
 SQL QUERY: 
             SELECT

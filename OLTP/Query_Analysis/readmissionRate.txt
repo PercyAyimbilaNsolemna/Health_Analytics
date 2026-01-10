@@ -1,28 +1,55 @@
-QUESTION: Monthly Encounters by Specialty
+QUESTION: 30-Day Readmission Rate
+
 
 SQL QUERY: 
-            QUESTION: Monthly Encounters by Specialty
-
-SQL QUERY: 
+            WITH inpatient_encounters AS (
             SELECT
-                DATE_FORMAT(e.encounter_date, '%Y-%m') AS encounter_month,
-                s.specialty_name,
-                e.encounter_type,
-                COUNT(e.encounter_id) AS total_encounters,
-                COUNT(DISTINCT e.patient_id) AS unique_patients
+                e.encounter_id,
+                e.patient_id,
+                e.provider_id,
+                e.discharge_date,
+                LEAD(e.encounter_date) OVER (
+                    PARTITION BY e.patient_id
+                    ORDER BY e.encounter_date
+                ) AS next_encounter_date,
+                LEAD(e.encounter_type) OVER (
+                    PARTITION BY e.patient_id
+                    ORDER BY e.encounter_date
+                ) AS next_encounter_type
             FROM encounters e
-            JOIN providers p
-                ON e.provider_id = p.provider_id
-            JOIN specialties s
-                ON p.specialty_id = s.specialty_id
-            GROUP BY
-                encounter_month,
-                s.specialty_name,
-                e.encounter_type
-            ORDER BY
-                encounter_month,
-                s.specialty_name,
-                e.encounter_type;
+            WHERE e.encounter_type = 'Inpatient'
+            AND e.discharge_date IS NOT NULL
+        )
+        SELECT
+            s.specialty_name,
+            COUNT(*) AS total_discharges,
+            SUM(
+                CASE
+                    WHEN next_encounter_type = 'Inpatient'
+                    AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS readmissions,
+            ROUND(
+                SUM(
+                    CASE
+                        WHEN next_encounter_type = 'Inpatient'
+                        AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+                        THEN 1
+                        ELSE 0
+                    END
+                ) / COUNT(*) * 100, 2
+            ) AS readmission_rate_percent
+        FROM inpatient_encounters ie
+        JOIN providers p
+            ON ie.provider_id = p.provider_id
+        JOIN specialties s
+            ON p.specialty_id = s.specialty_id
+        GROUP BY
+            s.specialty_name
+        ORDER BY
+            readmission_rate_percent DESC
 
 
 SCHEMA ANALYSIS:
@@ -50,13 +77,11 @@ SCHEMA ANALYSIS:
 
 
 TABLES JOINED:
-                Encounters,
-                Providers, and
-                Specialties
+                
 
 
 NUMBER OF JOINS:
-                    2
+                    
 
 
 EXECUTION TIME:
