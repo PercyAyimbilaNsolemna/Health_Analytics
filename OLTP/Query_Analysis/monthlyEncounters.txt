@@ -1,6 +1,6 @@
 QUESTION: Monthly Encounters by Specialty
 
-SQL QUERY: 
+SQL QUERY:
             SELECT
                 DATE_FORMAT(e.encounter_date, '%Y-%m') AS encounter_month,
                 s.specialty_name,
@@ -21,26 +21,26 @@ SQL QUERY:
                 s.specialty_name,
                 e.encounter_type;
 
-
 SCHEMA ANALYSIS:
 
+TABLES JOINED: encounters, providers, specialties
 
-TABLES JOINED:
-                Encounters,
-                Providers, and
-                Specialties
+NUMBER OF JOINS: 2
 
+PERFORMANCE:
+EXECUTION TIME: [Needs actual execution - typically 2-5+ seconds for large datasets]
 
-NUMBER OF JOINS:
-                    
+ESTIMATED ROWS SCANN: [Full table scan of encounters table + lookups in providers and specialties]
 
+Bottleneck Identified:
+1. DATE_FORMAT() in SELECT prevents index usage - The function call on encounter_date means any index on this column cannot be used for grouping, forcing a full table scan and file sort operation.
 
-EXECUTION TIME:
+2. No indexes on join columns - If provider_id (in encounters) and specialty_id (in providers) lack indexes, the joins will be inefficient with nested loop scans.
 
+3. GROUP BY on computed column - Grouping by encounter_month (a computed value) requires sorting all rows after the DATE_FORMAT calculation.
 
+4. Large result set - Grouping by month, specialty, and encounter type creates many groups, requiring substantial memory for aggregation.
 
-NUMBER OF ROWS SCANNED:
+5. ORDER BY matches GROUP BY but still requires sorting - Even though ORDER BY matches GROUP BY, the computed encounter_month still needs sorting.
 
-
-
-BOTTLENECK IDENTIFIED:
+Root Cause: The use of DATE_FORMAT() in the SELECT and GROUP BY clauses prevents efficient index usage on the encounter_date column, forcing expensive table scans and file sorts on potentially millions of encounter records.

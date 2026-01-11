@@ -1,95 +1,76 @@
 QUESTION: 30-Day Readmission Rate
 
-
-SQL QUERY: 
-            WITH inpatient_encounters AS (
-            SELECT
-                e.encounter_id,
-                e.patient_id,
-                e.provider_id,
-                e.discharge_date,
-                LEAD(e.encounter_date) OVER (
-                    PARTITION BY e.patient_id
-                    ORDER BY e.encounter_date
-                ) AS next_encounter_date,
-                LEAD(e.encounter_type) OVER (
-                    PARTITION BY e.patient_id
-                    ORDER BY e.encounter_date
-                ) AS next_encounter_type
-            FROM encounters e
-            WHERE e.encounter_type = 'Inpatient'
-            AND e.discharge_date IS NOT NULL
-        )
-        SELECT
-            s.specialty_name,
-            COUNT(*) AS total_discharges,
-            SUM(
-                CASE
-                    WHEN next_encounter_type = 'Inpatient'
-                    AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
-                    THEN 1
-                    ELSE 0
-                END
-            ) AS readmissions,
-            ROUND(
-                SUM(
-                    CASE
-                        WHEN next_encounter_type = 'Inpatient'
-                        AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
-                        THEN 1
-                        ELSE 0
-                    END
-                ) / COUNT(*) * 100, 2
-            ) AS readmission_rate_percent
-        FROM inpatient_encounters ie
-        JOIN providers p
-            ON ie.provider_id = p.provider_id
-        JOIN specialties s
-            ON p.specialty_id = s.specialty_id
-        GROUP BY
-            s.specialty_name
-        ORDER BY
-            readmission_rate_percent DESC
-
+SQL QUERY:
+WITH inpatient_encounters AS (
+    SELECT
+        e.encounter_id,
+        e.patient_id,
+        e.provider_id,
+        e.discharge_date,
+        LEAD(e.encounter_date) OVER (
+            PARTITION BY e.patient_id
+            ORDER BY e.encounter_date
+        ) AS next_encounter_date,
+        LEAD(e.encounter_type) OVER (
+            PARTITION BY e.patient_id
+            ORDER BY e.encounter_date
+        ) AS next_encounter_type
+    FROM encounters e
+    WHERE e.encounter_type = 'Inpatient'
+    AND e.discharge_date IS NOT NULL
+)
+SELECT
+    s.specialty_name,
+    COUNT(*) AS total_discharges,
+    SUM(
+        CASE
+            WHEN next_encounter_type = 'Inpatient'
+            AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+            THEN 1
+            ELSE 0
+        END
+    ) AS readmissions,
+    ROUND(
+        SUM(
+            CASE
+                WHEN next_encounter_type = 'Inpatient'
+                AND next_encounter_date <= discharge_date + INTERVAL 30 DAY
+                THEN 1
+                ELSE 0
+            END
+        ) / COUNT(*) * 100, 2
+    ) AS readmission_rate_percent
+FROM inpatient_encounters ie
+JOIN providers p
+    ON ie.provider_id = p.provider_id
+JOIN specialties s
+    ON p.specialty_id = s.specialty_id
+GROUP BY
+    s.specialty_name
+ORDER BY
+    readmission_rate_percent DESC;
 
 SCHEMA ANALYSIS:
 
+TABLES JOINED: encounters (in CTE), providers, specialties
 
-TABLES JOINED:
-                
+NUMBER OF JOINS: 2 (plus window function operations)
 
-NUMBER OF JOINS:
-                    
+Performance:
+Execution time: [Needs actual execution - typically 10-30+ seconds for large datasets]
+Estimated rows scanned: [Full table scan of encounters table multiple times - once for filtering, once for window function partitioning and sorting]
 
+Bottleneck Identified:
+1. **Window Function with PARTITION BY patient_id** - The LEAD() function requires sorting ALL inpatient encounters for EACH patient. This creates expensive sort operations, especially with many patients and encounters. The database must materialize temporary result sets for each partition.
 
-EXECUTION TIME:
+2. **Full table scan in CTE** - Even with an index on encounter_type, the WHERE clause filters the entire encounters table to find inpatient visits, then the window function requires accessing ALL encounters per patient (not just inpatient).
 
+3. **Missing composite index** - No index on (patient_id, encounter_date, encounter_type) means the window function cannot efficiently access ordered patient encounter sequences, forcing file sorts.
 
+4. **Inefficient LEAD logic** - LEAD looks at the next encounter chronologically, but doesn't filter to only inpatient encounters BEFORE applying the window function. This means it's sorting through all encounter types per patient unnecessarily.
 
-NUMBER OF ROWS SCANNED:
+5. **Duplicate CASE expressions** - The same CASE statement is evaluated twice (for SUM and for percentage calculation), doubling the computational work.
 
+6. **No index on discharge_date** - The condition `discharge_date IS NOT NULL` cannot leverage an index efficiently if discharge_date isn't indexed.
 
-
-BOTTLENECK IDENTIFIED:
-
-
-SCHEMA ANALYSIS:
-
-
-TABLES JOINED:
-                
-
-
-NUMBER OF JOINS:
-                    
-
-
-EXECUTION TIME:
-
-
-
-NUMBER OF ROWS SCANNED:
-
-
-
-BOTTLENECK IDENTIFIED:
+**Root Cause**: The **window function with PARTITION BY patient_id** is the primary bottleneck. It requires sorting potentially millions of encounter records by patient and date, creating temporary result sets that consume massive memory and I/O. Without a composite index on (patient_id, encounter_date), this becomes a full table sort operation that scales poorly as patient and encounter volumes grow.
