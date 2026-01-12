@@ -12,7 +12,8 @@
 */
 
 SELECT
-    DATE_FORMAT(e.encounter_date, '%Y-%m') AS encounter_month,
+    YEAR(encounter_date) AS  year,
+    MONTH(e.encounter_date) AS month,
     s.specialty_name,
     e.encounter_type,
     COUNT(e.encounter_id) AS total_encounters,
@@ -23,10 +24,11 @@ JOIN providers p
 JOIN specialties s
     ON p.specialty_id = s.specialty_id
 GROUP BY
-    encounter_month,
+    year,
+    month,
     s.specialty_name,
     e.encounter_type
 ORDER BY
-    encounter_month,
+    month,
     s.specialty_name,
     e.encounter_type
