@@ -14,7 +14,8 @@
 
 
 SELECT
-    DATE_FORMAT(b.claim_date, '%Y-%m') AS claim_month,
+    YEAR(b.claim_date) AS year,
+    MONTH(b.claim_date) AS month,
     s.specialty_name,
     SUM(b.allowed_amount) AS total_allowed_amount
 FROM billing b
@@ -25,7 +26,8 @@ JOIN providers p
 JOIN specialties s
     ON p.specialty_id = s.specialty_id
 GROUP BY
-    claim_month,
+    year,
+    month,
     s.specialty_name
 ORDER BY
     total_allowed_amount DESC
