@@ -1,6 +1,7 @@
 QUESTION: 30-Day Readmission Rate
 
 SQL QUERY:
+
 WITH inpatient_encounters AS (
     SELECT
         e.encounter_id,
@@ -56,11 +57,13 @@ TABLES JOINED: encounters (in CTE), providers, specialties
 
 NUMBER OF JOINS: 2 (plus window function operations)
 
-Performance:
-Execution time: [Needs actual execution - typically 10-30+ seconds for large datasets]
-Estimated rows scanned: [Full table scan of encounters table multiple times - once for filtering, once for window function partitioning and sorting]
+PERFORMANCE:
 
-Bottleneck Identified:
+EXECUTION TIME: [Needs actual execution - typically 10-30+ seconds for large datasets]
+
+ESTIMATED ROWS SCANNED: [Full table scan of encounters table multiple times - once for filtering, once for window function partitioning and sorting]
+
+BOTTLENECK IDENTIFIED:
 1. **Window Function with PARTITION BY patient_id** - The LEAD() function requires sorting ALL inpatient encounters for EACH patient. This creates expensive sort operations, especially with many patients and encounters. The database must materialize temporary result sets for each partition.
 
 2. **Full table scan in CTE** - Even with an index on encounter_type, the WHERE clause filters the entire encounters table to find inpatient visits, then the window function requires accessing ALL encounters per patient (not just inpatient).
