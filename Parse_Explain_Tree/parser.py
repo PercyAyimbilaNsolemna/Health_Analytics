@@ -7,6 +7,20 @@ def extract_execution_time(line):
         return float(match.group(1))
     return None
 
+def extract_rows(line):
+    """Extract rows from a line."""
+    match = re.search(r'rows=(\d+\.?\d*)', line)
+    if match:
+        return float(match.group(1))
+    return None
+
+def extract_cost(line):
+    """Extract cost from a line."""
+    match = re.search(r'cost=(\d+\.?\d*)', line)
+    if match:
+        return float(match.group(1))
+    return None
+
 def calculate_total_time(plan_text):
     """Calculate total execution time from the plan."""
     lines = plan_text.strip().split('\n')
@@ -18,6 +32,30 @@ def calculate_total_time(plan_text):
             max_time = max(max_time, time)
     
     return max_time
+
+def calculate_total_rows(plan_text):
+    """Calculate total rows scanned from the plan."""
+    lines = plan_text.strip().split('\n')
+    total_rows = 0
+    
+    for line in lines:
+        rows = extract_rows(line)
+        if rows:
+            total_rows += rows
+    
+    return total_rows
+
+def calculate_total_cost(plan_text):
+    """Calculate total cost from the plan."""
+    lines = plan_text.strip().split('\n')
+    total_cost = 0
+    
+    for line in lines:
+        cost = extract_cost(line)
+        if cost:
+            total_cost += cost
+    
+    return total_cost
 
 def print_query_plan(plan_text):
     """Print query execution plan from bottom to top in a user-friendly format."""
@@ -81,10 +119,17 @@ def print_query_plan(plan_text):
     
     # Calculate and print total execution time
     total_time = calculate_total_time(plan_text)
+    total_rows = calculate_total_rows(plan_text)
+    total_cost = calculate_total_cost(plan_text)
     
     print("=" * 80)
-    print(f"TOTAL QUERY EXECUTION TIME: {total_time:.3f} ms")
+    print("PERFORMANCE METRICS SUMMARY")
     print("=" * 80)
+    print(f"\nTotal Execution Time: {total_time:.3f} ms \n")
+    print(f"Total Rows Scanned:   {total_rows:.2f} \n")
+    print(f"Total Query Cost:     {total_cost:.2f} \n")
+    print("=" * 80)
+
 
 def main():
     # Example usage
