@@ -1,0 +1,254 @@
+DIMENSION LOAD LOGIC
+
+LOADING dim_patient
+
+Source table: patients (OLTP)
+Target table: dim_patient (OLAP)
+
+WHAT IS BEING DONE
+
+    We copy patient descriptive information from the operational system into the data warehouse (OLAP) so it can be used for analysis.
+
+WHY IT IS NEEDED
+
+    The fact table should not store names or personal details
+
+    Dimensions store descriptive attributes
+
+    Patients change slowly compared to encounters
+
+ETL LOGIC
+
+    1. Extract patient records from the patients table.
+
+    2. Select only descriptive fields:
+
+        patient_id
+
+        first_name
+
+        last_name
+
+        gender
+
+        date_of_birth
+
+    3. Remove duplicates using DISTINCT (one row per patient).
+
+    4. Insert the records into dim_patient.
+
+    5. A surrogate key (patient_key) is automatically generated.
+
+    1.2 Loading dim_date (One-Time Load)
+
+
+
+LOADING dim_date (ONE TIME LOAD)
+
+SOURCE: Dates derived from OLTP tables
+
+TARGET: dim_date
+
+
+WHAT IS BEING DONE
+
+    We create a calendar table that describes every date used in analytics.
+
+
+WHY IT IS NEEDED
+
+    1. OLTP does not store a “date table”
+
+
+    2. ANALYTICS NEED:
+
+        Year
+
+        Month
+
+        Day name
+
+        Weekend flag
+
+    3. Date logic should not be recalculated in queries
+
+    ETL LOGIC
+
+    1. Extract distinct dates from:
+
+        encounter_date
+
+        discharge_date
+
+    2. For each date:
+
+        Calculate year, month, day
+
+        Determine weekday and weekend flag
+
+    3. Generate a numeric date_key (YYYYMMDD).
+
+    4. Insert into dim_date.
+
+
+
+
+HANDLING UPDATES TO DIMENSIONS
+
+PROBLEM
+
+Some dimension attributes can change:
+
+    Patient name corrections
+
+    Provider department changes
+
+SCD Type 1 FOR HANDLING UPDATES TO TABLES
+
+    1. Overwrite old values with new ones
+
+    2. No history kept
+
+
+
+
+
+2. FACT TABLE LOAD LOGIC (fact_encounter)
+
+2.1 Looking Up Dimension Keys
+
+What we are doing
+
+    For each encounter, we replace OLTP IDs with surrogate keys.
+
+Why
+
+    Fact tables should never store business keys
+
+    Surrogate keys make joins faster and stable
+
+
+
+2.2 Calculating Pre-Aggregated Metrics
+
+Metrics Stored in fact_encounter
+
+    diagnosis_count
+
+    procedure_count
+
+    total_allowed_amount
+
+    is_readmission
+
+Why Pre-Aggregate?
+
+    Avoid expensive joins at query time
+
+    Improve performance
+
+    Simplify OLAP queries
+
+
+
+2.3 Handling Missing Data
+
+Examples
+
+    1. Encounter with no procedures
+
+    2. Encounter with no billing record
+
+Strategy
+
+    1. Use 0 for numeric metrics
+
+    2. Use “Unknown” dimension keys
+
+    3. Never leave NULLs in the fact table
+
+Why
+
+    1. NULLs break aggregations
+
+    2. Analytics expect consistent data
+
+
+
+3. Bridge Table Load Logic
+
+3.1 Loading bridge_encounter_diagnoses
+
+    Source: encounter_diagnoses
+
+    Target: bridge_encounter_diagnoses
+
+What we are doing
+
+    We connect encounters to diagnoses (many-to-many).
+
+Why a Bridge Table?
+
+    One encounter can have many diagnoses
+
+    Diagnoses are reused across encounters
+
+    Fact table should not explode in size
+
+
+
+3.2 Loading bridge_encounter_procedures
+
+    Source: encounter_procedures
+    Target: bridge_encounter_procedures
+
+
+
+
+4. Refresh Strategy
+
+4.1 Load Frequency
+
+Dimensions
+
+    Daily incremental load
+
+    Insert new records
+
+    Update changed records
+
+Fact Table
+
+    Daily incremental load
+
+    Only new encounters since last run
+
+Bridge Tables
+
+    Loaded alongside fact table
+
+    Incremental inserts
+
+
+
+4.2 Handling Late-Arriving Facts
+
+Example
+
+    Billing arrives days after encounter
+
+Strategy
+
+    1. Insert encounter with temporary metrics (0 or NULL)
+
+    2. When billing arrives:
+
+        Update total_allowed_amount
+
+    3. Use last_updated_date to track changes
+
+Why This Works
+
+    Analytics stay up-to-date
+
+    No need to reload entire fact table
