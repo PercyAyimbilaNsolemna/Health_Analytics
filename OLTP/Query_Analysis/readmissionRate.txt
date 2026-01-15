@@ -59,21 +59,43 @@ NUMBER OF JOINS: 2 (plus window function operations)
 
 PERFORMANCE:
 
-EXECUTION TIME: [Needs actual execution - typically 10-30+ seconds for large datasets]
+ESTIMATED EXECUTION TIME: 0.24 ms
 
-ESTIMATED ROWS SCANNED: [Full table scan of encounters table multiple times - once for filtering, once for window function partitioning and sorting]
+ESTIMATED ROWS SCANNED: 59 (Detailed access types analysis in the notebook)
+
+ESTIMATED QUERY COST: 13.84
 
 BOTTLENECK IDENTIFIED:
-1. **Window Function with PARTITION BY patient_id** - The LEAD() function requires sorting ALL inpatient encounters for EACH patient. This creates expensive sort operations, especially with many patients and encounters. The database must materialize temporary result sets for each partition.
+1. Full Table Scan on encounters
+    [Step 1] Table scan on e
 
-2. **Full table scan in CTE** - Even with an index on encounter_type, the WHERE clause filters the entire encounters table to find inpatient visits, then the window function requires accessing ALL encounters per patient (not just inpatient).
+    Meaning of the bottleneck
 
-3. **Missing composite index** - No index on (patient_id, encounter_date, encounter_type) means the window function cannot efficiently access ordered patient encounter sequences, forcing file sorts.
+    1. MySQL is reading every row in the encounters table.
 
-4. **Inefficient LEAD logic** - LEAD looks at the next encounter chronologically, but doesn't filter to only inpatient encounters BEFORE applying the window function. This means it's sorting through all encounter types per patient unnecessarily.
+    2. It does this before filtering for inpatient encounters.
 
-5. **Duplicate CASE expressions** - The same CASE statement is evaluated twice (for SUM and for percentage calculation), doubling the computational work.
+    Why this bottleneck matters
 
-6. **No index on discharge_date** - The condition `discharge_date IS NOT NULL` cannot leverage an index efficiently if discharge_date isn't indexed.
+    1. With many rows, scanning the entire table is slow.
 
-**Root Cause**: The **window function with PARTITION BY patient_id** is the primary bottleneck. It requires sorting potentially millions of encounter records by patient and date, creating temporary result sets that consume massive memory and I/O. Without a composite index on (patient_id, encounter_date), this becomes a full table sort operation that scales poorly as patient and encounter volumes grow.
+    2. This happens because the database cannot quickly jump to inpatient rows.
+
+2. Sorting for Window Functions
+    [Step 3] Sort: e.patient_id, e.encounter_date
+
+    What this means
+
+    1. To use LEAD(), MySQL must:
+
+        Group rows by patient
+
+        Sort encounters by date
+
+    Why this is a bottleneck
+
+    1. Sorting is expensive
+
+    2. Sorting gets slower as rows increase
+
+    3. Sorting cannot be skipped for window functions

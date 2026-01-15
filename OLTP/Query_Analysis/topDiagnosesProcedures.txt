@@ -20,25 +20,28 @@ GROUP BY
 ORDER BY
     encounter_count DESC;
 
-Schema Analysis:
-Tables joined: encounter_diagnoses, diagnoses, encounter_procedures, procedures, encounters
+SCHEMA ANALYSIS:
+TABLES JOINED: encounter_diagnoses, diagnoses, encounter_procedures, procedures, encounters
 Number of joins: 4
 
-Performance:
-Execution time: [Needs actual execution - typically 5-15+ seconds for large datasets]
-Estimated rows scanned: [Cartesian product risk - every diagnosis paired with every procedure for the same encounter_id, potentially millions of rows]
+PERFORMANCE:
+EXECUTION TIME: 0.446 ms
 
-Bottleneck Identified:
-1. **Cartesian Product Problem** - The join between encounter_diagnoses and encounter_procedures on encounter_id creates a many-to-many relationship. If an encounter has 3 diagnoses and 2 procedures, this produces 6 rows (3×2), leading to explosive row multiplication.
+ESTIMATED ROWS SCANNED: 61 (Detailed access types in the notebook)
 
-2. **Multiple large table joins** - Five tables joined together, with encounter_diagnoses and encounter_procedures likely being the largest tables (many-to-many bridge tables).
+ESTIMATED COST: 27
 
-3. **Missing indexes on join keys** - If encounter_id columns in encounter_diagnoses and encounter_procedures lack indexes, the join becomes extremely expensive.
+BOTTLENECKS IDENTIFIED:
+1. Many-to-Many Join Explosion
 
-4. **Redundant join to encounters table** - The encounters table is only used for DISTINCT counting of encounter_id, which is already available in encounter_diagnoses. This adds an unnecessary join operation.
+    One encounter can have:
 
-5. **No LIMIT clause** - Without a LIMIT, the query processes all diagnosis-procedure pairs even if only top N are needed.
+        Multiple diagnoses
 
-6. **File sort for ORDER BY** - Sorting the entire aggregated result set by count requires additional sorting overhead.
+        Multiple procedures
 
-**Root Cause**: The primary bottleneck is the **Cartesian product explosion** created by joining encounter_diagnoses and encounter_procedures on encounter_id. For encounters with multiple diagnoses and procedures, this creates M×N combinations, exponentially increasing the number of rows processed during aggregation and making the query scale poorly as encounter complexity increases.
+    Joining them before aggregation creates a Cartesian multiplication per encounter
+
+    Example:
+
+    5 diagnoses × 4 procedures → 20 rows per encounter

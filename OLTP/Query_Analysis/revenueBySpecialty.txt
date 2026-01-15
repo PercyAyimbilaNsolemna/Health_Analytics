@@ -1,4 +1,4 @@
-QUESTION: Revenue by Specialty & Month
+QUESTION 4: Revenue by Specialty & Month
 
 SQL QUERY: 
             SELECT
@@ -22,20 +22,35 @@ SQL QUERY:
 SCHEMA ANALYSIS:
 
 
-TABLES JOINED:
+TABLES JOINED: billing, encounters, providers, specialties
                 
 
-
-NUMBER OF JOINS:
+NUMBER OF JOINS: 3
                     
+PERFORMANCE METRICS:
 
+ESTIMATED EXECUTION TIME: 0.1 ms
 
-EXECUTION TIME:
+ESTIMATED ROWS SCANNED: 21 (Detailed access types in the notebook)
 
-
-
-NUMBER OF ROWS SCANNED:
-
+ESTIMATED QUERY COST: 7.95
 
 
 BOTTLENECK IDENTIFIED:
+1. Full Table Scan on billing
+
+    What this means
+
+        MySQL reads every row in the billing table.
+
+        It does this before grouping or summing.
+
+    Why this is a bottleneck
+
+    1. As billing grows, scanning the entire table gets slower.
+
+    2. There is no shortcut because:
+
+        Not filtering by date
+
+        No useful index can be used

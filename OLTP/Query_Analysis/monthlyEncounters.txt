@@ -28,19 +28,31 @@ TABLES JOINED: encounters, providers, specialties
 NUMBER OF JOINS: 2
 
 PERFORMANCE:
-EXECUTION TIME: [Needs actual execution - typically 2-5+ seconds for large datasets]
+            EXECUTION TIME (Not constant): 0.24 ms
 
-ESTIMATED ROWS SCANN: [Full table scan of encounters table + lookups in providers and specialties]
+            ESTIMATED ROWS SCANNED: 27
+
+            ESTIMATED QUERY COST: 9
+
+
 
 Bottleneck Identified:
-1. DATE_FORMAT() in SELECT prevents index usage - The function call on encounter_date means any index on this column cannot be used for grouping, forcing a full table scan and file sort operation.
 
-2. No indexes on join columns - If provider_id (in encounters) and specialty_id (in providers) lack indexes, the joins will be inefficient with nested loop scans.
+            DATE_FORMAT(e.encounter_date, '%Y-%m') AS encounter_month
 
-3. GROUP BY on computed column - Grouping by encounter_month (a computed value) requires sorting all rows after the DATE_FORMAT calculation.
+            1. The statement above applies a function on a column in the SELECT and GROUP BY.
 
-4. Large result set - Grouping by month, specialty, and encounter type creates many groups, requiring substantial memory for aggregation.
+            2. MySQL cannot use an index on encounter_date for grouping or sorting.
 
-5. ORDER BY matches GROUP BY but still requires sorting - Even though ORDER BY matches GROUP BY, the computed encounter_month still needs sorting.
+            3. As encounters grows, this forces:
 
-Root Cause: The use of DATE_FORMAT() in the SELECT and GROUP BY clauses prevents efficient index usage on the encounter_date column, forcing expensive table scans and file sorts on potentially millions of encounter records.
+                Full scan (or wide index scan)
+
+                Expensive grouping and sorting
+
+
+            EVIDENCE IN EXECUTION PLAN IN THE NOTEBOOK
+
+            1. No index usage on encounter_date
+
+            2. Sorting happens after streaming results (Step 8)
