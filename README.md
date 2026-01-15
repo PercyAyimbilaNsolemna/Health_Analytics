@@ -1,6 +1,6 @@
-# 🏥 Hospital Analytics Data Warehouse (OLTP → OLAP)
+# Hospital Analytics Data Warehouse (OLTP → OLAP)
 
-## 📌 Project Overview
+## Project Overview
 
 This project designs and implements a **hospital analytics data warehouse** using a **Star Schema** to support fast, reliable, and scalable OLAP queries.
 
@@ -16,7 +16,7 @@ The work demonstrates the full data warehousing lifecycle:
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### Source System (OLTP)
 
@@ -41,7 +41,7 @@ The OLAP schema reorganizes data into a **Star Schema** optimized for analytics:
 
 ---
 
-## ⭐ Star Schema Design
+## Star Schema Design
 
 ### Fact Table
 
@@ -90,7 +90,7 @@ Bridge tables handle true **many-to-many relationships** without exploding the f
 
 ---
 
-## 🔄 ETL Process
+## ETL Process
 
 ### ETL Strategy
 
@@ -127,7 +127,7 @@ The ETL process moves data from OLTP to OLAP in four stages:
 
 ---
 
-## 📊 Analytical Queries (OLAP)
+## Analytical Queries (OLAP)
 
 The star schema supports common healthcare analytics such as:
 
@@ -138,14 +138,14 @@ The star schema supports common healthcare analytics such as:
 
 Queries are:
 
-- ✅ Short
-- ✅ Easy to read
-- ✅ Fast to execute
-- ✅ Free of complex business logic
+- Short
+- Easy to read
+- Fast to execute
+- Free of complex business logic
 
 ---
 
-## ⚡ Performance Improvements
+## Performance Improvements
 
 | Query | OLTP Time | OLAP Time | Improvement |
 |-------|-----------|-----------|-------------|
@@ -154,28 +154,32 @@ Queries are:
 
 ### Why the Speedup?
 
-- ✅ Fewer joins
-- ✅ No join explosion
-- ✅ Pre-computed metrics
-- ✅ No `COUNT(DISTINCT ...)`
-- ✅ Dimensional date handling
+- Fewer joins
+- No join explosion
+- Pre-computed metrics
+- No `COUNT(DISTINCT ...)`
+- Dimensional date handling
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-├── oltp_schema.sql        # Original normalized schema
-├── olap_schema.sql        # Star schema (fact, dimensions, bridges)
-├── etl_design.txt         # ETL logic documentation
-├── reflection.md          # Design & performance reflection
-├── sample_queries.sql     # OLAP analytical queries
-└── README.md              # Project documentation
+├── Config                      # Configuration
+├── Notebooks                   # Jupyter notebook
+├── OLAP                        # OLAP 
+├── OLTP                        # OLTP
+├── Parse_Explain_Tree          # Parse explain tree
+├── Read_Files                  # Read sql files
+├── reflections.md              # Star schema analysis
+├── requirements.txt            # Requirements to run the project
+└── README.md                   # Project documentation
+              
 ```
 
 ---
 
-## 🧠 Key Concepts Demonstrated
+## Key Concepts Demonstrated
 
 - OLTP vs OLAP design principles
 - Star schema modeling
@@ -187,7 +191,7 @@ Queries are:
 
 ---
 
-## 🧪 Tools & Technologies
+## Tools & Technologies
 
 - **Database:** MySQL
 - **SQL:** DDL, DML, analytical queries
@@ -196,18 +200,18 @@ Queries are:
 
 ---
 
-## 🎯 Learning Outcomes
+## Learning Outcomes
 
 By completing this project, you gain hands-on experience with:
 
-- ✅ Designing analytics-optimized schemas
-- ✅ Writing ETL logic for data warehouses
-- ✅ Understanding why schema design impacts performance
-- ✅ Translating business questions into OLAP queries
+- Designing analytics-optimized schemas
+- Writing ETL logic for data warehouses
+- Understanding why schema design impacts performance
+- Translating business questions into OLAP queries
 
 ---
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
 - [ ] Slowly Changing Dimensions (Type 2)
 - [ ] Incremental ETL automation
