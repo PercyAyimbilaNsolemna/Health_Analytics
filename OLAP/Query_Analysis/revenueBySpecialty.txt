@@ -1,0 +1,39 @@
+QUESTION 4: Revenue by Specialty & Month
+
+
+SQL QUERY:
+            SELECT
+                d.year,
+                d.month,
+                s.specialty_name,
+                SUM(f.total_allowed_amount) AS total_allowed_amount
+            FROM fact_encounter f
+            JOIN dim_date d
+                ON f.date_key = d.date_key
+            JOIN dim_specialty s
+                ON f.specialty_key = s.specialty_key
+            GROUP BY
+                d.year,
+                d.month,
+                s.specialty_name
+            ORDER BY total_allowed_amount DESC
+
+
+
+
+
+PERFORMANCE METRICS:
+                    EXECUTION TIME (Not constant): 0.13 ms
+
+                    ESTIMATED ROWS SCANNED: 25
+
+                    ESTIMATED QUERY COST: 6
+
+
+IMPROVEMENT FACTOR:
+                    Almost the same
+
+
+EXPLANATION:
+                
+
