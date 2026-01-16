@@ -1,4 +1,4 @@
-# Reflection: Star Schema Design and Performance
+# FINAL REFLECTION: STAR SCHEMA DESIGN AND PERFROMANCE ANALYSIS
 
 ## Why Is the Star Schema Faster?
 
@@ -137,15 +137,15 @@ Diagnoses and procedures have a true **many-to-many relationship** with encounte
 
 Putting these directly into the fact table would:
 
-- ❌ Multiply fact rows
-- ❌ Inflate storage
-- ❌ Break grain consistency
+- Multiply fact rows
+- Inflate storage
+- Break grain consistency
 
 Bridge tables preserve:
 
-- ✅ Correct encounter grain
-- ✅ Full clinical detail
-- ✅ Query flexibility
+- Correct encounter grain
+- Full clinical detail
+- Query flexibility
 
 ### Trade-offs of Bridge Tables
 
@@ -206,8 +206,8 @@ This project demonstrated that **schema design matters more than indexing alone*
 
 By moving complexity into ETL and adopting a star schema:
 
-- ✅ Queries became simpler
-- ✅ Performance improved significantly
-- ✅ Analytical intent became clearer
+- Queries became simpler
+- Performance improved significantly
+- Analytical intent became clearer
 
 **The star schema transforms raw transactional data into a structure that supports fast, reliable, and scalable analytics — making it the correct choice for OLAP workloads.**
