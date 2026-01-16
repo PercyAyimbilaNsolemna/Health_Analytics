@@ -1,4 +1,4 @@
-# Hospital Analytics Data Warehouse (OLTP → OLAP)
+# HEALTHCARE ANALYTICS  (OLTP → OLAP)
 
 ## Project Overview
 
