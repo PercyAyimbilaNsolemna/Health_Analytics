@@ -1,4 +1,4 @@
-# HEALTHCARE ANALYTICS  (OLTP → OLAP)
+# **HEALTHCARE ANALYTICS  (OLTP → OLAP)**
 
 ## Project Overview
 
